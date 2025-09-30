@@ -1,0 +1,894 @@
+{
+  "name": "TL_TEAMS_ASSISTANT_AGENT",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/teams/bot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        48
+      ],
+      "id": "e502f4eb-f3e7-431d-a7a0-6793a403fea0",
+      "name": "Receive Teams Webhook",
+      "webhookId": "9cfda559-8fda-4a7f-bd37-9b0ce07df56a"
+    },
+    {
+      "parameters": {
+        "content": "# ENTRADA\n## Receive Teams Webhook\n* Objetivo: Recibir mensajes desde Teams Bot Framework.\n* Input esperado: JSON body (text, from, conversation, timestamp).\n* Output esperado: Objeto normalizado para procesamiento.\n⚠️ Riesgo: payloads inesperados (archivos, attachments no soportados).\n",
+        "height": 432,
+        "width": 448,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "11384a7d-643e-4ea7-8027-2e1f0c6aff35",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        496
+      ],
+      "id": "1ad54dca-46ed-47e5-bf4f-809f8ddbe65a",
+      "name": "Teams Test Chat",
+      "webhookId": "6cff7463-809e-4be5-a020-f9e86cc45aba"
+    },
+    {
+      "parameters": {
+        "content": "# PROCESAMIENTO\n## Teams Test Chat\n* Objetivo: Probar respuestas manuales desde n8n.\n* Input esperado: Mensajes de prueba enviados desde editor.\n* Output esperado: Confirmación de envío al chat de Teams.\n⚠️ Riesgo: este nodo es temporal, se elimina antes de producción.\n",
+        "height": 432,
+        "width": 448,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "a9af3379-b78b-45f1-a762-6d2822872c3f",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --------------------------------------------------------\n// Normalize Teams Payload -> Funcionalidad:\n// Este nodo convierte el JSON recibido de Teams\n// en un objeto limpio con claves snake_case.\n// Si la entrada es del nodo de pruebas, devuelve un mock.\n// --------------------------------------------------------\n\n// --------------------------------------------------------\n// Objetivo:\n// Detectar si la ejecución viene del nodo \"Teams Test Chat\"\n// En n8n, la propiedad $node indica los datos de otros nodos.\n// Aquí asumimos que el nodo de pruebas se llama \"Teams Test Chat\".\n// --------------------------------------------------------\n\n// --------------------------------------------------------\n// Paso 1: Validacion si el Input JSON tiene Body \n// con eso separamos Pruebas (Teams Test Chat) de Webhook (Receive Teams Webhook)\n// --------------------------------------------------------\nlet input; // Declaracion de variable con el ingreso de informacion.\ntry {\n  input = $json.body ? $json : null; // Si existe body, es webhook real\n} catch (e) {\n  input = null;\n}\n\n// --------------------------------------------------------\n// Caso 1: Mock (entrada desde \"Teams Test Chat\")\n// --------------------------------------------------------\nif (!input) {\n  return [\n    {\n      user_id: \"mock_user_id_123\",\n      user_name: \"Mock User\",\n      user_aad_id: \"mock_aad_id_123\",\n      message_id: \"mock_message_id_123\",\n      message_text: \"Hola desde mock\",\n      message_timestamp: new Date().toISOString(),\n      conversation_id: \"mock_conversation_id_123\",\n      conversation_type: \"personal\",\n      tenant_id: \"mock_tenant_id_123\",\n      locale: \"es-CO\",\n      timezone: \"America/Bogota\",\n      service_url: \"https://mock.service.url/\"\n    }\n  ];\n}\n\n// --------------------------------------------------------\n// Caso 2: Entrada real desde Teams Webhook\n// --------------------------------------------------------\nconst body = $json.body || {};\nconst from = body.from || {};\nconst conversation = body.conversation || {};\n\nreturn [\n  {\n    user_id: from.id || null,\n    user_name: from.name || null,\n    user_aad_id: from.aadObjectId || null,\n    message_id: body.id || null,\n    message_text: body.text || null,\n    message_timestamp: body.timestamp || null,\n    conversation_id: conversation.id || null,\n    conversation_type: conversation.conversationType || null,\n    tenant_id: conversation.tenantId || null,\n    locale: body.locale || null,\n    timezone: (body.entities && body.entities[0]?.timezone) || null,\n    service_url: body.serviceUrl || null\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -144
+      ],
+      "id": "27f1f35c-b26f-466b-a8ba-8113905adab0",
+      "name": "Normalize Teams Payload"
+    },
+    {
+      "parameters": {
+        "content": "# NORMALIZACION\n## Normalize Teams Payload\n* Objetivo: Estandarizar el JSON recibido desde Teams.\n* Input esperado: JSON crudo (body, from, conversation).\n* Output esperado: Objeto limpio en snake_case listo para routing.\n* Soporta modo pruebas: si no hay body → devuelve mock con datos ficticios.\n⚠️ Riesgo: campos faltantes se devuelven como `null`.\n\n\n",
+        "height": 432,
+        "width": 480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        -400
+      ],
+      "typeVersion": 1,
+      "id": "b6454d59-08c3-46bf-9777-b29f6b47c963",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# PROCESAMIENTO\n## Responder en Teams\n* Objetivo: Responder en el mismo chat de Teams donde se recibió el mensaje original, confirmando la conexión del flujo.\n* Validaciones:\n  - Validar que `conversation_id` esté presente para direccionar correctamente la respuesta.\n  - Verificar que el JSON de salida cumpla con formato válido.\n* Output:\n  - Respuesta JSON confirmando entrega en Teams (ejemplo: {\"status\": \"ok\"}).\n\n\n\n",
+        "height": 432,
+        "width": 688,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1392,
+        -688
+      ],
+      "typeVersion": 1,
+      "id": "fcacfebd-6b83-4f00-ab34-e29750fdedd1",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ok\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1680,
+        -400
+      ],
+      "id": "24f1735e-9e62-4e49-8edb-aecd8eef4b92",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/f5b4bce5-06f0-4035-861f-ddea6d55a5e9/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{$env.BOT_APP_ID}}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{$env.BOT_APP_PASSWORD}}"
+            },
+            {
+              "name": "scope",
+              "value": "=https://api.botframework.com/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1456,
+        272
+      ],
+      "id": "c3c277fa-d448-482f-8bd8-7ed344387086",
+      "name": "Get Bot Token"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Normalize Teams Payload').item.json.service_url }}/v3/conversations/{{ $('Normalize Teams Payload').item.json.conversation_id }}/activities\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Merge by Index').item.json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.menu_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        192
+      ],
+      "id": "9959b87d-d1d9-4a04-9276-9ce1c69970d0",
+      "name": "Send Menu To Teams"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f3bc03a1-e6e8-48b4-be28-514e089eea82",
+              "name": "menu_body.type",
+              "value": "message",
+              "type": "string"
+            },
+            {
+              "id": "b6e12ddf-f81c-4385-9161-bc275fd95ea2",
+              "name": "menu_body.attachments[0].contentType",
+              "value": "application/vnd.microsoft.card.adaptive",
+              "type": "string"
+            },
+            {
+              "id": "4e11ed38-790f-4d1a-b31e-01fdf79b36d0",
+              "name": "menu_body.attachments[0].content.$schema",
+              "value": "http://adaptivecards.io/schemas/adaptive-card.json",
+              "type": "string"
+            },
+            {
+              "id": "00a5777e-8ed2-4451-9c86-30da434cc2a9",
+              "name": "menu_body.attachments[0].content.type",
+              "value": "AdaptiveCard",
+              "type": "string"
+            },
+            {
+              "id": "8b2165a3-43e6-4611-bdf9-83838e8f7410",
+              "name": "menu_body.attachments[0].content.version",
+              "value": "1.4",
+              "type": "string"
+            },
+            {
+              "id": "a00d98e6-4e35-42ad-b48c-b6c2cb4d77fd",
+              "name": "menu_body.attachments[0].content.body[0].type",
+              "value": "TextBlock",
+              "type": "string"
+            },
+            {
+              "id": "2e17e463-900c-4298-9789-1522dc2245c2",
+              "name": "menu_body.attachments[0].content.body[0].text",
+              "value": "=Hola {{$('Normalize Teams Payload').item.json.user_name || ''}} 👋 ¿En qué puedo ayudarte hoy?",
+              "type": "string"
+            },
+            {
+              "id": "b6942c22-b695-4ecf-9f1f-9357093f0929",
+              "name": "menu_body.attachments[0].content.body[0].wrap",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "22f9533d-f2a0-485c-af96-32ce651a0e0d",
+              "name": "menu_body.attachments[0].content.body[0].weight",
+              "value": "Bolder",
+              "type": "string"
+            },
+            {
+              "id": "ae49557a-8a2e-44a5-8058-63b288a44ff9",
+              "name": "menu_body.attachments[0].content.body[0].size",
+              "value": "Medium",
+              "type": "string"
+            },
+            {
+              "id": "41ec4496-6ecf-4ae2-8f52-16da85121e44",
+              "name": "menu_body.attachments[0].content.actions[0].type",
+              "value": "Action.Submit",
+              "type": "string"
+            },
+            {
+              "id": "16ee5197-1fb5-4100-abe8-bbc5aaa914b3",
+              "name": "menu_body.attachments[0].content.actions[0].title",
+              "value": "1. Buscar Candidatos",
+              "type": "string"
+            },
+            {
+              "id": "af3df989-f046-4df1-8785-8e1271905e91",
+              "name": "menu_body.attachments[0].content.actions[0].data.action",
+              "value": "buscar_candidatos",
+              "type": "string"
+            },
+            {
+              "id": "30b5c33e-f14e-444a-8390-f1004904f5c6",
+              "name": "menu_body.attachments[0].content.actions[1].type",
+              "value": "Action.Submit",
+              "type": "string"
+            },
+            {
+              "id": "556d2015-5f09-48f8-8c80-c6241179172a",
+              "name": "menu_body.attachments[0].content.actions[1].title",
+              "value": "2. Convertir Hoja de Vida",
+              "type": "string"
+            },
+            {
+              "id": "f283291f-95d1-4979-8496-1d4d4877a598",
+              "name": "menu_body.attachments[0].content.actions[1].data.action",
+              "value": "convertir_cv",
+              "type": "string"
+            },
+            {
+              "id": "50828174-148f-4560-bb6a-de6b391a4d9e",
+              "name": "menu_body.attachments[0].content.actions[2].type",
+              "value": "Action.Submit",
+              "type": "string"
+            },
+            {
+              "id": "c3c497e4-83e6-4b00-b2c2-73b8ad167809",
+              "name": "menu_body.attachments[0].content.actions[2].title",
+              "value": "3. Enviar Correo Candidato",
+              "type": "string"
+            },
+            {
+              "id": "f76356b2-eb88-4204-a225-f3e4e02a8029",
+              "name": "menu_body.attachments[0].content.actions[2].data.action",
+              "value": "enviar_correo",
+              "type": "string"
+            },
+            {
+              "id": "6ffd057b-9768-4d16-9f5c-82ee0bae88ad",
+              "name": "menu_body.attachments[0].content.actions[3].type",
+              "value": "Action.Submit",
+              "type": "string"
+            },
+            {
+              "id": "1ed3b5bf-0639-41a8-9328-4df56ac1f590",
+              "name": "menu_body.attachments[0].content.actions[3].title",
+              "value": "4. Solicitar Base de Datos de Candidatos",
+              "type": "string"
+            },
+            {
+              "id": "3944c7e7-2777-4c95-9016-d8e91e678dc6",
+              "name": "menu_body.attachments[0].content.actions[3].data.action",
+              "value": "solicitar_bd",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        112
+      ],
+      "id": "419268f2-c96d-46f5-a02b-aec8c9c19331",
+      "name": "Build Menu Card",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1648,
+        192
+      ],
+      "id": "b974abcc-897a-448e-aa9b-a611cfc65d75",
+      "name": "Merge by Index",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "# PROCESAMIENTO\n## Envío de Menú Interactivo a Teams\n* Objetivo: Construir y enviar una Adaptive Card a Microsoft Teams con opciones de acción para el usuario.\n* Validaciones:\n  - El objeto `menu_body` debe cumplir con el esquema AdaptiveCard (schema válido, campos obligatorios).\n  - Confirmar que el token de autenticación de Teams esté activo.\n* Output:\n  - Mensaje enviado en Teams con `id` de confirmación.\n  - Adaptive Card visible para que el usuario seleccione una acción.\n",
+        "height": 640,
+        "width": 688,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1392,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "0ddcc02b-4b44-4170-a8a5-e57cf55bfa08",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# PROCESAMIENTO\n## Check Message Type\n* Objetivo: Determinar si el evento recibido desde Teams corresponde a un mensaje de texto inicial o a una acción de menú.\n* Validaciones: \n  - Verificar si existe `body.text` → clasificar como texto normal.\n  - Verificar si existe `body.value.action` → clasificar como respuesta de menú interactivo.\n* Output:\n  - Rama TRUE → Texto inicial (saludo u otro mensaje libre).\n  - Rama FALSE → Acción de menú (AdaptiveCard) a procesar en el switch de opciones.\n\n",
+        "height": 608,
+        "width": 464,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        352,
+        -144
+      ],
+      "typeVersion": 1,
+      "id": "7a14a001-4d8e-470f-911a-29ffdc3443ac",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "# NORMALIZACION\n## Normalize Teams Action\n* Objetivo: Estandarizar el JSON recibido desde Teams cuando proviene de una acción de menú (AdaptiveCard).\n* Input esperado: JSON crudo con `body.value.action`.\n* Output esperado: Objeto limpio en snake_case con claves de usuario, conversación y acción.\n* Consideraciones:\n  - Mantiene consistencia con la normalización de mensajes de texto.\n  - Facilita el routing en el Switch de opciones posteriores.\n* Riesgo: si el campo `value.action` no existe → devuelve null.\n\n\n\n",
+        "height": 528,
+        "width": 480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        176
+      ],
+      "typeVersion": 1,
+      "id": "81b8d829-4c99-4d70-8651-2a0be35edbf8",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e8eb9749-2944-4fe4-9b1e-8824023cf094",
+              "leftValue": "={{$json[\"body\"][\"text\"]}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f765710b-1257-438c-88e1-1d7de09968e1",
+              "leftValue": "={{$json[\"body\"][\"value\"][\"action\"]}}\n",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        272
+      ],
+      "id": "39124172-802c-4c53-96b0-8f76182a06fc",
+      "name": "Check Message Type"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --------------------------------------------------------\n// Normalize Teams Action -> Funcionalidad:\n// Este nodo convierte el JSON recibido desde Teams cuando \n// proviene de una acción de menú (AdaptiveCard).\n// --------------------------------------------------------\n\n// --------------------------------------------------------\n// Objetivo:\n// Limpiar el JSON y devolver un objeto en snake_case con \n// información clave del usuario, conversación y acción seleccionada.\n// --------------------------------------------------------\n\nconst body = $json.body || {};\nconst from = body.from || {};\nconst conversation = body.conversation || {};\nconst value = body.value || {};\n\nreturn [\n  {\n    user_id: from.id || null,\n    user_name: from.name || null,\n    user_aad_id: from.aadObjectId || null,\n    message_id: body.id || null,\n    message_timestamp: body.timestamp || null,\n    conversation_id: conversation.id || null,\n    conversation_type: conversation.conversationType || null,\n    tenant_id: conversation.tenantId || null,\n    locale: body.locale || null,\n    timezone: (body.entities && body.entities[0]?.timezone) || null,\n    service_url: body.serviceUrl || null,\n    action: value.action || null   // <-- Campo clave del menú\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        544
+      ],
+      "id": "4975c7a2-7cc6-45f1-97ea-220c880baf62",
+      "name": "Normalize Teams Action"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "buscar_candidatos",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "12687077-edc2-42af-ba0e-f94f97c04995"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b04362e9-9042-4498-8b4a-cf2463792c45",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "convertir_cv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "54d52b8b-c822-4476-9171-f22449a1ff2d",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "enviar_correo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e1ec7a2a-e262-4d10-b107-f84a2b002286",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "solicitar_bd",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1568,
+        848
+      ],
+      "id": "26e64cb1-6186-402e-a745-dcba0518f26b",
+      "name": "Route Teams Action"
+    },
+    {
+      "parameters": {
+        "content": "# ROUTING\n## Route Teams Action\n* Objetivo: Enrutar las acciones recibidas desde Teams (AdaptiveCard) hacia el flujo correspondiente.\n* Input esperado: Objeto normalizado con campo `action`.\n* Output esperado: Rama de ejecución específica para cada acción.\n* Acciones soportadas:\n  - buscar_candidatos\n  - convertir_cv\n  - enviar_correo\n  - solicitar_bd\n* Riesgo: Si llega un valor de `action` no contemplado, quedará sin enrutar.\n",
+        "height": 624,
+        "width": 544,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1392,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "2bdcd56f-4d84-4522-8230-c140924f553a",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/f5b4bce5-06f0-4035-861f-ddea6d55a5e9/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{$env.BOT_APP_ID}}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{$env.BOT_APP_PASSWORD}}"
+            },
+            {
+              "name": "scope",
+              "value": "=https://api.botframework.com/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2064,
+        1536
+      ],
+      "id": "9412f488-1f84-4817-a410-7df0abef0b36",
+      "name": "Get Bot Token Menu"
+    },
+    {
+      "parameters": {
+        "content": "# OUTPUT\n## Send Teams Placeholder Response\n* Objetivo: Responder en Teams cuando la acción seleccionada aún no está implementada.\n* Input esperado: Objeto normalizado con `service_url`, `conversation_id` y `action`.\n* Output esperado: Mensaje simple en Teams confirmando que la opción está en construcción.\n* Consideraciones:\n  - Reutilizable para cualquier acción en mantenimiento.\n  - Mensaje se adapta dinámicamente mostrando el valor de la acción (`action`).\n",
+        "height": 720,
+        "width": 608,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2000,
+        1024
+      ],
+      "typeVersion": 1,
+      "id": "d97ca281-9620-44eb-ab8c-c3a2a4f2020b",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.service_url }}v3/conversations/{{ $json.conversation_id }}/activities\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"message\",\n  \"from\": {\n    \"id\": \"{{ $json.user_id }}\",\n    \"name\": \"{{ $json.user_name }}\"\n  },\n  \"conversation\": {\n    \"id\": \"{{ $json.conversation_id }}\"\n  },\n  \"text\": \"La opción seleccionada se encuentra en Mantenimiento y/o construcción. Puedes seleccionar otra de las opciones del menu para interactuar. Gracias por su paciencia.\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2416,
+        1472
+      ],
+      "id": "c16c0657-9ba4-4222-a3ec-a546d88bdc2b",
+      "name": "Send Teams Placeholder Response"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2224,
+        1392
+      ],
+      "id": "1fc9ff29-2581-4784-8983-61ab3c48ab01",
+      "name": "Merge by Index Menu",
+      "alwaysOutputData": false,
+      "executeOnce": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Teams Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Message Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teams Test Chat": {
+      "main": [
+        [
+          {
+            "node": "Check Message Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Teams Payload": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Bot Token",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Menu Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bot Token": {
+      "main": [
+        [
+          {
+            "node": "Merge by Index",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Send Menu To Teams": {
+      "main": [
+        []
+      ]
+    },
+    "Build Menu Card": {
+      "main": [
+        [
+          {
+            "node": "Merge by Index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge by Index": {
+      "main": [
+        [
+          {
+            "node": "Send Menu To Teams",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Message Type": {
+      "main": [
+        [
+          {
+            "node": "Normalize Teams Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalize Teams Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Teams Action": {
+      "main": [
+        [
+          {
+            "node": "Route Teams Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Teams Action": {
+      "main": [
+        [
+          {
+            "node": "Get Bot Token Menu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge by Index Menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Bot Token Menu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge by Index Menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Bot Token Menu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge by Index Menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Bot Token Menu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge by Index Menu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bot Token Menu": {
+      "main": [
+        [
+          {
+            "node": "Merge by Index Menu",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge by Index Menu": {
+      "main": [
+        [
+          {
+            "node": "Send Teams Placeholder Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "234ccc40-eb7c-41db-ac26-f5af15838f32",
+  "meta": {
+    "instanceId": "0733ec7d4b29c8b06efe6d03732cf5d3cf35f159a3bb2f002f754fd1d9a70a45"
+  },
+  "id": "pZAmXB5XGwwl55rK",
+  "tags": []
+}

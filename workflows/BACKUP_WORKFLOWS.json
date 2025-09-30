@@ -1,0 +1,465 @@
+{
+  "name": "BACKUP_WORKFLOWS",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -480
+      ],
+      "id": "a146cfbc-ff17-47a0-a52c-64a443236045",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {
+          "timezone": "-05:00"
+        }
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        -480
+      ],
+      "id": "35a71411-7a49-4ce1-add1-1a89ac8fe041",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.currentDate }}",
+        "format": "=yyyyMMddHHmmss",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        -480
+      ],
+      "id": "8bccf44b-011c-4d73-90fa-a539dd63cf9b",
+      "name": "Format Date Time"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3fd05ead-cea7-4f23-9881-cb305726a027",
+              "name": "commit_date",
+              "value": "={{ $json.formattedDate }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1232,
+        -272
+      ],
+      "id": "173b32cf-be6f-44c1-b732-5c7d3e50ff96",
+      "name": "Set Commit Date Time"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "list",
+        "owner": {
+          "__rl": true,
+          "value": "user",
+          "mode": "list",
+          "cachedResultName": "user",
+          "cachedResultUrl": "https://github.com/user"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "project",
+          "mode": "list",
+          "cachedResultName": "project",
+          "cachedResultUrl": "https://github.com/user/project"
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        -272
+      ],
+      "id": "6acce24e-e151-42cc-a314-22fd8691b9d9",
+      "name": "List files",
+      "webhookId": "86ee695a-053d-4848-a170-2ef86afb0d56",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "1",
+          "name": "GitHub"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "fileName": "={{ $json.name }}-{{ $json.id }}.json"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1456,
+        -64
+      ],
+      "id": "3466dd81-a3b6-4885-8c8a-330a4e82e37b",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "include": "specifiedFields",
+        "fieldsToInclude": "name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        -272
+      ],
+      "id": "2d547fa8-b2bc-472e-abed-48902100fc68",
+      "name": "Combine File Names"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        304
+      ],
+      "id": "23835196-0feb-4f68-8f3c-f606e01a362f",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "user",
+          "mode": "list",
+          "cachedResultName": "user",
+          "cachedResultUrl": "https://github.com/user"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "project",
+          "mode": "list",
+          "cachedResultName": "project",
+          "cachedResultUrl": "https://github.com/user/project"
+        },
+        "filePath": "={{$binary.data.fileName}}",
+        "binaryData": true,
+        "commitMessage": "=Backup Legal Agent Dev -  {{ $('Date & Time').item.json.currentDate }}"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        144
+      ],
+      "id": "5a0cb5f4-9c79-47f3-86cd-4e5fdb72b74b",
+      "name": "Update Workflow File",
+      "webhookId": "73b010ea-6859-4f8f-8f57-e2a76e918b11",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "1",
+          "name": "GitHub"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "user",
+          "mode": "list",
+          "cachedResultName": "user",
+          "cachedResultUrl": "https://github.com/user"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "project",
+          "mode": "list",
+          "cachedResultName": "project",
+          "cachedResultUrl": "https://github.com/user/project"
+        },
+        "filePath": "={{$binary.data.fileName}}",
+        "binaryData": true,
+        "commitMessage": "={{ $('Date & Time').item.json.currentDate}}"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        304
+      ],
+      "id": "92f4a91e-ad9a-485b-b218-1cd2af055006",
+      "name": "Upload New Workflow",
+      "webhookId": "0068e610-8b9d-4f4b-bd7e-a2b26fd71657",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "1",
+          "name": "GitHub"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "filters": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        -64
+      ],
+      "id": "506ba7db-c15e-4665-ac5e-ee35c874976f",
+      "name": "Get all workflows",
+      "credentials": {
+        "n8nApi": {
+          "id": "1",
+          "name": "n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Combine File Names').item.json.data[0].name }}",
+                    "rightValue": "={{ $('Get all workflows').item.json.name }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "4d66ea88-c7c7-493f-8eeb-5db83f600d23"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "File Exists"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3e2ad788-327e-4c52-94c4-6617199d01c9",
+                    "leftValue": "={{ $('Combine File Names').item.json.data[0].name }}",
+                    "rightValue": "={{ $('Get all workflows').item.json.name }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notContains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "File Does Not Exists"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1264,
+        208
+      ],
+      "id": "95eec1af-7712-4d34-827e-681e93aa8cf8",
+      "name": "Validate WF Existence"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Date & Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "Format Date Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Date Time": {
+      "main": [
+        [
+          {
+            "node": "Set Commit Date Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Commit Date Time": {
+      "main": [
+        [
+          {
+            "node": "List files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List files": {
+      "main": [
+        [
+          {
+            "node": "Combine File Names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Validate WF Existence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine File Names": {
+      "main": [
+        [
+          {
+            "node": "Get all workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation, do nothing": {
+      "main": [
+        [
+          {
+            "node": "Validate WF Existence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Workflow File": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload New Workflow": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all workflows": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate WF Existence": {
+      "main": [
+        [
+          {
+            "node": "Update Workflow File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload New Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "14aea3b5-8cca-4ce7-94ac-641e1d43b4eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "45bc3f3ddedc86d567efc970bdf78c69ff4388dc6284b45ec656e7e90febcb2c"
+  },
+  "id": "V2JnQV6OQBp7AErZ",
+  "tags": []
+}
